@@ -331,6 +331,7 @@ public class BouncyBallSim {
 			// ball.setVY(ball.getVY() + ball.getAY());
 			for (Ball ball : balls){
 				//ball.setAX(0);
+				System.out.println("test");
 				ball.setAY(G);
 				ball.setVY(ball.getVY() + ball.getAY());
 				ball.setY(ball.getY() + ball.getVY());
