@@ -27,11 +27,10 @@ public class Vector {
 	public static double[] add(double[] A, double[] B){
 		return new double[]{A[0] + B[0], A[1] + B[1]};
 	}
-
 }
 
 public class BouncyBallSim {
-	public static final int WIDTH = 1600;
+	public static final int WIDTH = 800;
 	public static final int HEIGHT = 800;
 	public static final double G = 0.02;
 	public static final int BALL_RAD = 15;
@@ -40,7 +39,7 @@ public class BouncyBallSim {
 	public static final double X_FRIC = 0.0;
 	public static final double Y_BOUNCE_FRIC = -0.6;
 	public static final int GAME_SPEED = 7;
-
+	public Ball ball = new Ball(100, 100);
 	private JFrame window;
 
 
@@ -51,12 +50,10 @@ public class BouncyBallSim {
 	private JPanel buttonPanel;
 	private GraphicsPanel graphicsPanel;
 	private Timer timer;
-	private ArrayList<Ball> balls = new ArrayList<>();
 	private ArrayList<Ground> grounds = new ArrayList<>();
 
 	public BouncyBallSim(){
 		Ball ball = new Ball(WIDTH/2, 50);
-		balls.add(ball);
 		window = new JFrame("Bouncing Ball");
 		window.setSize(WIDTH, HEIGHT);
 		window.setLayout(new BorderLayout());
@@ -93,9 +90,10 @@ public class BouncyBallSim {
 
 	private class ResetListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
-			balls.clear();
-			Ball ball = new Ball(WIDTH/2, 50);
-			balls.add(ball);
+			ball.setX(WIDTH/2);
+			ball.setY(100);
+			ball.setVX(0);
+			ball.setVY(0);
 			graphicsPanel.requestFocusInWindow();
 		}
 	}
@@ -135,24 +133,17 @@ public class BouncyBallSim {
     	@Override
     	public void keyPressed(KeyEvent e){
     		if (e.getKeyCode() == KeyEvent.VK_LEFT){
-    			for (Ball ball : balls){
-    				ball.ball_a[0] = -X_A;
-    				System.out.println("left");
-    			}
+				ball.ball_a[0] = -X_A;
+
     		}
     		if (e.getKeyCode() == KeyEvent.VK_RIGHT){
-    			for (Ball ball : balls){
-    				ball.ball_a[0] = X_A;
-    				System.out.println("right");
-    			}
+				ball.ball_a[0] = X_A;
     		}
     	}
     	@Override
     	public void keyReleased(KeyEvent e){
     		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_LEFT){
-	    		for (Ball ball : balls){
-	    			ball.ball_a[0] = 0;
-	    		}
+    			ball.ball_a[0] = 0;
     		}
     	}
     	@Override
@@ -165,13 +156,13 @@ public class BouncyBallSim {
     	@Override
     	public void keyPressed(KeyEvent e){
     		if (e.getKeyCode() == KeyEvent.VK_Z){
-    			for (Ball ball : balls) {ball.setGrap(true);}
+    			ball.setGrap(true);
     		}
     	}
     	@Override
     	public void keyReleased(KeyEvent e){
     		if (e.getKeyCode() == KeyEvent.VK_Z){
-    			for (Ball ball : balls) {ball.setGrap(false);}
+    			ball.setGrap(false);
     		}
     	}
     	@Override
@@ -326,64 +317,76 @@ public class BouncyBallSim {
 
 	private class GraphicsPanel extends JPanel{
 		public void updatePosition(){
-			// ball.setAY(G);
 
-			// ball.setVY(ball.getVY() + ball.getAY());
-			for (Ball ball : balls){
-				//ball.setAX(0);
-				System.out.println("test");
-				ball.setAY(G);
-				ball.setVY(ball.getVY() + ball.getAY());
-				ball.setY(ball.getY() + ball.getVY());
+			ball.setVY(ball.getVY() + ball.getAY() + G);
+			ball.setY(ball.getY() + ball.getVY());
 
+			ball.setVX(ball.getVX() + ball.getAX());
+			ball.setX(ball.getX() + ball.getVX());
 
-				ball.setVX(ball.getVX() + ball.getAX());
-				ball.setX(ball.getX() + ball.getVX());
+			if (ball.getVX() > 0){
+				ball.setVX(Math.max(0, ball.getVX() - X_FRIC));
+			}
+			if (ball.getVX() < 0){
+				ball.setVX(Math.min(0, ball.getVX() + X_FRIC));
+			}
 
-				if (ball.getVX() > 0){
-					ball.setVX(Math.max(0, ball.getVX() - X_FRIC));
+			ball.checkCollisions();
+
+			double dx = 0, dy = 0, minDist = 10000000, dist = 0;
+			for (Ground gr : grounds){
+				double[] d = ball.getDxDy(gr);
+				double d2 = d[0] * d[0] + d[1] * d[1];
+
+				if (d2 < minDist){
+					minDist = d2;
+					dx = d[0];
+					dy = d[1];
 				}
-				if (ball.getVX() < 0){
-					ball.setVX(Math.min(0, ball.getVX() + X_FRIC));
+				dist = Math.sqrt(minDist);
+				if (gr.getType().equals("CIRC")) {
+				    dist = Math.sqrt(dx*dx + dy*dy) - gr.getRad() - BALL_RAD;
+				} 
+				else {
+				    dist = Math.sqrt(dx*dx + dy*dy);
+				}	
+			}
+		
+
+			if (ball.getGrap() == true){
+				double nx = dx / dist;
+				double ny = dy / dist;
+				double v[] = {ball.getVX(),	 ball.getVY()};
+				double n[] = {nx, ny};
+
+				// double radVel = ball.getVX() * nx + ball.getVY() * ny;
+				double radVel = Vector.dot(v, n);
+				if (radVel < 0){ // ball moving away from grap point
+			   		ball.setVX(ball.getVX() - radVel * nx);
+			   		ball.setVY(ball.getVY() - radVel * ny);					
 				}
 
-				ball.checkCollisions();
+			    // double speed = Math.sqrt(ball.getVX()*ball.getVX() + ball.getVY()*ball.getVY());
+			    // double centAccel = speed*speed / dist;
 
-				double dx = 0, dy = 0, minDist = 10000000, dist = 0;
-				for (Ground gr : grounds){
-					double[] d = ball.getDxDy(gr);
-					double d2 = d[0] * d[0] + d[1] * d[1];
-					if (d2 < minDist){ dist = d2; dx = d[0]; dy = d[1]; }
-
-					if (gr.getType().equals("CIRC")){ dist = Math.sqrt(dx * dx + dy * dy) - BALL_RAD - gr.getRad(); }
-					else if (gr.getType().equals("RECT")){ dist = Math.sqrt(dx * dx + dy * dy); }
-				}
-				dist = Math.sqrt(dist);
-				if (ball.getGrap() == true){
-					double nx = dx / dist;
-					double ny = dy / dist;
-
-				    double speed = Math.sqrt(ball.getVX()*ball.getVX() + ball.getVY()*ball.getVY());
-				    double centAccel = speed*speed / dist;
-
-				    ball.setAX(ball.getAX() + centAccel * nx);
-				    ball.setAY(ball.getAY() + centAccel * ny);
-				}
 
 			}
+
 			graphicsPanel.repaint();
 		}
 
 		@Override
 		protected void paintComponent(Graphics g){
 			super.paintComponent(g);
-			for (Ball ball : balls){
-				g.fillOval((int)ball.getX() - BALL_RAD, (int)ball.getY() - BALL_RAD, BALL_RAD*2, BALL_RAD*2);
-			}
+			g.fillOval((int)ball.getX() - BALL_RAD, (int)ball.getY() - BALL_RAD, BALL_RAD*2, BALL_RAD*2);
+
 			g.setColor(Color.RED);
 			for (Ground gr : grounds){
 				if (gr.getType().equals("RECT")){
 					g.fillRect(gr.getX(), gr.getY(), gr.getW(), gr.getH());
+				}
+				if (ball.getGrap() == true){
+					g.drawLine((int) ball.getX(), (int) ball.getY(), (int)ball.getX() + (int) ball.getDxDy(gr)[0], (int)ball.getY() + (int) ball.getDxDy(gr)[1]);
 				}
 				if (gr.getType().equals("CIRC")){
 					g.fillOval(gr.getX(), gr.getY(), (int)gr.getRad() * 2, (int)gr.getRad() * 2);
