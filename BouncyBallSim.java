@@ -23,13 +23,13 @@ import java.util.Random;
 public class BouncyBallSim {
 	public static final int WIDTH = 800;
 	public static final int HEIGHT = 800;
-	public static final double G = 0.02;
-	public static final int BALL_RAD = 15;
+	public static final double G = 0.029;
+	public static final int BALL_RAD = 10;
 	public static boolean PAUSE = true;
 	public static final double X_A = 0.02;
 	public static final double X_FRIC = 0.0;
 	public static final double Y_BOUNCE_FRIC = -1;
-	public static final int GAME_SPEED = 7;
+	public static final int GAME_SPEED = 5;
 	public Ball ball = new Ball(100, 100);
 	private JFrame window;
 
@@ -120,7 +120,7 @@ public class BouncyBallSim {
 				Ground g = new Ground(25, 100, 300, "CIRC");
 				grounds.add(g);
 				grounds.add(g2);    			
-				Ground floor = new Ground(200, 500, 50, 50, "RECT");
+				Ground floor = new Ground(200, 500, 350, 25, "RECT");
 				grounds.add(floor);
 			}
 
@@ -154,7 +154,7 @@ public class BouncyBallSim {
 	public class grappleListener implements KeyListener {
 		@Override
 		public void keyPressed(KeyEvent e){
-			if (e.getKeyCode() == KeyEvent.VK_Z){
+			if (e.getKeyCode() == KeyEvent.VK_Z && ball.grapAvailable()){
 				ball.setGrap(true);
 			}
 		}
@@ -185,8 +185,11 @@ public class BouncyBallSim {
 		private double[] n = {0, 0};
 		public boolean GRAP = false;
 		public double speed = 0.0;
-		private boolean isTouchingGround = false;
+		private boolean isColl = false;
 		private boolean grapAvailable = false;
+
+		public static final int GRAP_LIMIT = 500;
+		private int grapMeter = GRAP_LIMIT;
 
 
 		public Ball(double bx, double by){
@@ -207,8 +210,10 @@ public class BouncyBallSim {
 		public double getAX(){ return ball_a[0]; }
 		public double getAY(){ return ball_a[1]; }
 		public double getSpeed() { return speed; }
+		public boolean isColl() {return isColl; }
+		public void setColl(boolean t) { isColl = t; }
+
 		public boolean getGrap() { return GRAP; }
-		public boolean isTouchingGround() {return isTouchingGround; }
 		public void setGrap(boolean g) { GRAP = g; }
 
 		public void setX(double dx){ this.ball_x = dx;}
@@ -222,6 +227,10 @@ public class BouncyBallSim {
 
 		public boolean grapAvailable() { return grapAvailable; }
 		public void setGrapAvailable(boolean t){ grapAvailable = t; }
+
+		public int getGrapMeter(){ return grapMeter; }
+		public void changeGrapMeter(int g){ grapMeter += g; }
+		public void setGrapMeter(int g){ grapMeter = g; }
 
 
 
@@ -242,7 +251,8 @@ public class BouncyBallSim {
 					}
 					if (dx * dx + dy * dy < BALL_RAD * BALL_RAD){
 						collisionVelocityUpdate(ball_v, n);
-						setGrap(false);
+						// setGrapAvailable(false);
+						ball.setColl(true);
 					}
 				}
 				else if (gr.getType().equals("CIRC")){
@@ -254,17 +264,17 @@ public class BouncyBallSim {
 					n = Vector.scale(n, (1/mag));	
 					if (dx * dx + dy * dy < Math.pow(gr.getRad() + BALL_RAD, 2)){	
 						collisionVelocityUpdate(ball_v, n);			
-						setGrap(false);
+						ball.setColl(true);
 					}
 				}
 			}
+			ball.setColl(false);
 		}
 		public void collisionVelocityUpdate(double[] v, double[] n){
 			// v' = v - 2(v \cdot n)n
 			double[] v_prime;
 			double[] term2 = Vector.scale(n, 2 * Vector.dot(v, n));
 			v_prime = Vector.subtract(v, term2);
-			// v_prime[1] *= Y_BOUNCE_FRIC;
 			ball_v = v_prime;
 		}
 
@@ -287,9 +297,6 @@ public class BouncyBallSim {
 			else if (gr.getType().equals("CIRC")){
 				double dx = gr.getX() + gr.getRad() - ball_x;
 				double dy = gr.getY() + gr.getRad() - ball_y;	
-				double THETA = Math.atan(dy/dx) * 180 / Math.PI;
-				//dx -= gr.getRad() * Math.cos(THETA);
-				//dy -= gr.getRad() * Math.sin(THETA);
 				return new double[] {dx, dy};			
 			}
 			return new double[] {0, 0};
@@ -310,8 +317,8 @@ public class BouncyBallSim {
 		}
 		public Ground(int rad, int x, int y, String shape){
 			this.rad = rad;
-			this.x = x - rad;
-			this.y = y - rad;
+			this.x = x;
+			this.y = y;
 			this.shapeType = shape;
 			graphicsPanel.repaint();
 		}
@@ -335,6 +342,7 @@ public class BouncyBallSim {
 		public static double getDY(){ return dy; }
 
 		public void updatePosition(){
+			if (!ball.getGrap() && ball.getGrapMeter() < ball.GRAP_LIMIT){ ball.changeGrapMeter(+1); }
 			ballPosLabel.setText((int)ball.getX() + ", " + (int)ball.getY());
 			ball.setVY(ball.getVY() + ball.getAY() + G);
 			ball.setY(ball.getY() + ball.getVY());
@@ -359,7 +367,7 @@ public class BouncyBallSim {
 					double[] d = ball.getDxDy(gr);
 					double d2 = Math.sqrt(d[0] * d[0] + d[1] * d[1]);
 
-					if (d2 < minDist){
+					if (d2 < minDist && gr.getType().equals("CIRC")){
 						minDist = d2;
 						closeGround = gr;
 					}
@@ -379,21 +387,25 @@ public class BouncyBallSim {
 				else {
 					dist = Math.sqrt(d[0] * d[0] + d[1] * d[1]);
 				}
-				// grapLen = dist;
 			}
-			ball.setGrapAvailable(dist < GRAP_LEN);
-			System.out.println(dist < GRAP_LEN);
-			boolean coll = dist <= 0; // only then calculate distances - prevents multi-object and object switching when grappling
-			if (ball.getGrap() && !coll && ball.grapAvailable()){
+			 // only then calculate distances - prevents multi-object and object switching when grappling
+			ball.setGrapAvailable(!ball.isColl() && dist < GRAP_LEN && ball.getGrapMeter() > 0);
+			// System.out.println(ball.grapAvailable());
+			if (ball.getGrap() && ball.grapAvailable()){
 				double nx = dx / dist;
 				double ny = dy / dist;
 				double v[] = {ball.getVX(),	ball.getVY()};
 				double n[] = {nx, ny};
-
+				double mag = Math.sqrt(nx * nx + ny * ny);
+				n = Vector.scale(n, 1/mag);
+				System.out.println(dist);
 				double radVel = Vector.dot(v, n);
+				// System.out.println(Vector.mag(n));
+				if (ball.getGrapMeter() > 0){ ball.changeGrapMeter(-1); }
+
 				if (radVel < 0){ // ball moving away from grap point
-					ball.setVX(ball.getVX() - radVel * nx);
-					ball.setVY(ball.getVY() - radVel * ny);					
+					ball.setVX(ball.getVX() - radVel * n[0]);
+					ball.setVY(ball.getVY() - radVel * n[1]);		
 				}
 			}
 
@@ -419,6 +431,7 @@ public class BouncyBallSim {
 			if (ball.getGrap() == true && ball.grapAvailable()){
 				g.drawLine((int) ball.getX(), (int) ball.getY(), (int)ball.getX() + (int) GraphicsPanel.getDX(), (int)ball.getY() + (int) GraphicsPanel.getDY());
 			}
+			g.fillRect(30, 30, ball.getGrapMeter(), 25);
 		}
 	}
 }
