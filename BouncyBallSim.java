@@ -25,15 +25,19 @@ public class BouncyBallSim {
 	public static final int WIDTH = 800;
 	public static final int HEIGHT = 800;
 	public static final double G = 0.029;
-	public static final int BALL_RAD = 10;
+	public static final int BALL_RAD = 14;
 	public static boolean PAUSE = true;
 	public static final double X_A = 0.02;
 	public static final double X_FRIC = 0.0;
 	public static final double Y_BOUNCE_FRIC = -1;
 	public static final int GAME_SPEED = 5;
+	public static final double GRAP_CD = 1.5;
+	public static final double GRAP_GIVEBACK = 0.3;
+	public static int MS_ELAPSED = 0;
+	public static int SEC = 0;
+
 	public Ball ball = new Ball(100, 100);
 	private JFrame window;
-
 
 	private JButton resetButton;
 	private JButton pauseButton;
@@ -45,6 +49,11 @@ public class BouncyBallSim {
 	private GraphicsPanel graphicsPanel;
 	private Timer timer;
 	private ArrayList<Ground> grounds = new ArrayList<>();
+
+	Color grappleBarColor = new Color(35, 49, 140);
+	Color ballColor = new Color(255, 110, 134);
+	Color backgroundColor = new Color(187, 199, 183);
+	Color grappleColor = new Color(0, 0, 0);
 
 	public BouncyBallSim(){
 		Ball ball = new Ball(WIDTH/2, 50);
@@ -79,7 +88,7 @@ public class BouncyBallSim {
 		graphicsPanel.addKeyListener(new grappleListener());
 		graphicsPanel.setFocusable(true);
 		graphicsPanel.requestFocusInWindow();
-		graphicsPanel.setBackground(Color.WHITE);
+		graphicsPanel.setBackground(backgroundColor);
 		window.add(graphicsPanel, BorderLayout.CENTER);
 		timer = new Timer(GAME_SPEED, new TimerListener());
  
@@ -109,23 +118,28 @@ public class BouncyBallSim {
 	private class TimerListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			if (!PAUSE){
+				pauseButton.setText("pause");
 				graphicsPanel.updatePosition();  
 				graphicsPanel.repaint();  
 			}
+			if (PAUSE){
+				pauseButton.setText("play");
+			}
+			MS_ELAPSED += GAME_SPEED;
+			// System.out.println(MS_ELAPSED);
 		}
 	}
 
 	private class CreateGroundListener implements ActionListener {
 		public void actionPerformed(ActionEvent e){
 			grounds.clear();
-			for (int i = 0; i < 5; i++){
-				Ground g = new Ground(25, 100 + 200 * i, 300, "CIRC");
+			for (int i = 0; i < 9; i++){
+				Ground g = new Ground(25, 100 + 300 * i, 300, "CIRC");
 				grounds.add(g);
 
 				Ground floor = new Ground(0, graphicsPanel.getHeight() - 30, graphicsPanel.getWidth(), 15, "RECT");
 				grounds.add(floor);
 			}
-
 			graphicsPanel.requestFocusInWindow();
 		}
 	}
@@ -135,7 +149,6 @@ public class BouncyBallSim {
 		public void keyPressed(KeyEvent e){
 			if (e.getKeyCode() == KeyEvent.VK_LEFT){
 				ball.ball_a[0] = -X_A;
-
 			}
 			if (e.getKeyCode() == KeyEvent.VK_RIGHT){
 				ball.ball_a[0] = X_A;
@@ -156,7 +169,7 @@ public class BouncyBallSim {
 	public class grappleListener implements KeyListener {
 		@Override
 		public void keyPressed(KeyEvent e){
-			if (e.getKeyCode() == KeyEvent.VK_Z && ball.grapAvailable()){
+			if (e.getKeyCode() == KeyEvent.VK_Z){
 				ball.setGrap(true);
 			}
 		}
@@ -171,7 +184,6 @@ public class BouncyBallSim {
 		public void keyTyped(KeyEvent e){
 			return;
 		}
-
 	}
 
 	private class Ball{
@@ -179,8 +191,8 @@ public class BouncyBallSim {
 		private double ball_y;
 
 		private double[] ball_v = new double[2];
-
 		private double[] ball_a = new double[2];
+
 		private double dist;
 		//private double dx, dy;
 		private double closeX, closeY;
@@ -190,9 +202,10 @@ public class BouncyBallSim {
 		private boolean isColl = false;
 		private boolean grapAvailable = false;
 
-		public static final int GRAP_LIMIT = 500;
-		private int grapMeter = GRAP_LIMIT;
+		private boolean grapOnCd = false;
 
+		public static final int GRAP_LIMIT = 2400;
+		private int grapMeter = GRAP_LIMIT;
 
 		public Ball(double bx, double by){
 			this.ball_x = bx;
@@ -234,8 +247,6 @@ public class BouncyBallSim {
 		public void changeGrapMeter(int g){ grapMeter += g; }
 		public void setGrapMeter(int g){ grapMeter = g; }
 
-
-
 		public void checkCollisions(){
 			speed = Math.sqrt(getVX() * getVX() + getVY() * getVY());
 			for (Ground gr : grounds){
@@ -253,7 +264,6 @@ public class BouncyBallSim {
 					}
 					if (dx * dx + dy * dy < BALL_RAD * BALL_RAD){
 						collisionVelocityUpdate(ball_v, n);
-						// setGrapAvailable(false);
 						ball.setColl(true);
 					}
 				}
@@ -303,6 +313,17 @@ public class BouncyBallSim {
 			}
 			return new double[] {0, 0};
 		}
+
+		public void setGrapOnCooldown(boolean g){
+			grapOnCd = g;
+			if (g){
+				MS_ELAPSED = 0;
+			}
+		}
+
+		public boolean grapOnCd(){
+			return grapOnCd;
+		}
 	}
 
 	private class Ground{
@@ -333,7 +354,6 @@ public class BouncyBallSim {
 		public String getType(){ return shapeType; }
 	}
 
-
 	private class GraphicsPanel extends JPanel{
 		private static double dx = 0;
 		private static double dy = 0;
@@ -344,12 +364,19 @@ public class BouncyBallSim {
 		public static double getDY(){ return dy; }
 
 		public static final double noGrappleCircleWidth = 1; 
-		public static final int GRAP_USE = -2;
-		public static final int GRAP_REC = +1;
-
+		public static final int GRAP_USE = -3;
+		public static final int GRAP_REC = +2;
+		public static final int BAR_SCALE = 3;
 
 		public void updatePosition(){
-			if (!ball.getGrap() && ball.getGrapMeter() < ball.GRAP_LIMIT){ ball.changeGrapMeter(GRAP_REC); }
+			if (MS_ELAPSED == GRAP_CD * 1000){
+				if (ball.grapOnCd()){
+					ball.setGrapOnCooldown(false);
+					ball.changeGrapMeter((int)(Ball.GRAP_LIMIT * (GRAP_GIVEBACK)));
+				}
+			}
+
+			if (!ball.getGrap() && ball.getGrapMeter() < ball.GRAP_LIMIT && !ball.grapOnCd()){ ball.changeGrapMeter(GRAP_REC); }
 			ballPosLabel.setText((int)ball.getX() + ", " + (int)ball.getY());
 			ball.setVY(ball.getVY() + ball.getAY() + G);
 			ball.setY(ball.getY() + ball.getVY());
@@ -397,23 +424,24 @@ public class BouncyBallSim {
 			}
 			 // only then calculate distances - prevents multi-object and object switching when grappling
 			ball.setGrapAvailable(!ball.isColl() && dist < GRAP_LEN && ball.getGrapMeter() > 0);
-			// System.out.println(ball.grapAvailable());
-			if (ball.getGrap() && ball.grapAvailable()){
+			// System.out.println(ball.grapOnCd());
+			if (ball.getGrap() && ball.grapAvailable() && !ball.grapOnCd()){
 				double nx = dx / dist;
 				double ny = dy / dist;
 				double v[] = {ball.getVX(),	ball.getVY()};
 				double n[] = {nx, ny};
 				double mag = Math.sqrt(nx * nx + ny * ny);
 				n = Vector.scale(n, 1/mag);
-				System.out.println(dist);
 				double radVel = Vector.dot(v, n);
-				// System.out.println(Vector.mag(n));
 				if (ball.getGrapMeter() > 0){ ball.changeGrapMeter(GRAP_USE); } // deplete meter
 
 				if (radVel < 0){ // ball moving away from grap point
 					ball.setVX(ball.getVX() - radVel * n[0]);
 					ball.setVY(ball.getVY() - radVel * n[1]);		
 				}
+			}
+			if (ball.getGrapMeter() <= 0 && !ball.grapOnCd()){
+				ball.setGrapOnCooldown(true);
 			}
 
 			graphicsPanel.repaint();
@@ -423,23 +451,30 @@ public class BouncyBallSim {
 		protected void paintComponent(Graphics g){
 			super.paintComponent(g);
 			float thickness = 1;
+			int ballBorderThickness = 2;
+			int grappleThickness = 1;
+			int grapBarThickness = 5;
 
 			Graphics2D g2d = (Graphics2D) g; //needed for setsrtoke
 			g2d.setStroke(new BasicStroke(thickness));
 
-			if (ball.getGrap() == true && ball.grapAvailable()){
-				thickness = 3;
+			if (ball.getGrap() == true && ball.grapAvailable() && !ball.grapOnCd()){
+				thickness = grappleThickness;
+				g2d.setStroke(new BasicStroke(thickness));
+				g2d.setColor(grappleColor);
 				g2d.drawLine((int) ball.getX(), (int) ball.getY(), (int)ball.getX() + (int) GraphicsPanel.getDX(), (int)ball.getY() + (int) GraphicsPanel.getDY());
 			}
-			else if (ball.getGrap() && !ball.grapAvailable()){
-				g2d.setColor(Color.GRAY);
-				thickness = 2;
+			if (ball.getGrap() && (ball.grapOnCd() || !ball.grapAvailable())){
+				g2d.setColor(grappleColor);
+				thickness = ballBorderThickness;
+				g2d.setStroke(new BasicStroke(thickness));
 				g2d.drawOval((int) (ball.getX() - GRAP_LEN), (int) (ball.getY() - GRAP_LEN), (int) (2 * GRAP_LEN), (int)(2 * GRAP_LEN));
 			}	
 
-			g2d.setColor(Color.RED);
+			g2d.setColor(ballColor);
 			g2d.fillOval((int)ball.getX() - BALL_RAD, (int)ball.getY() - BALL_RAD, BALL_RAD*2, BALL_RAD*2);
 			g2d.setColor(Color.BLACK);
+			g2d.drawOval((int)ball.getX() - BALL_RAD, (int)ball.getY() - BALL_RAD, BALL_RAD*2, BALL_RAD*2);
 
 			for (Ground gr : grounds){
 				if (gr.getType().equals("RECT")){
@@ -449,14 +484,14 @@ public class BouncyBallSim {
 					g2d.fillOval(gr.getX(), gr.getY(), (int)gr.getRad() * 2, (int)gr.getRad() * 2);
 				}
 			}
-			g2d.setColor(Color.GRAY);
-		
-			g.fillRect(((int)getWidth()/2 - ball.GRAP_LIMIT/2), 30, ball.getGrapMeter(), 25);
+			g2d.setColor(grappleBarColor);
+			g.fillRect(((int)getWidth()/2 - ball.GRAP_LIMIT/(BAR_SCALE*2)), 30, ball.getGrapMeter()/BAR_SCALE, 25);
 			g.setColor(Color.BLACK);
-			// outline of meter
-			thickness = 5;
+
+			// outline of meter bar
+			thickness = grapBarThickness;
 			g2d.setStroke(new BasicStroke(thickness));
-			g2d.drawRect(((int)getWidth()/2 - ball.GRAP_LIMIT/2), 30, ball.GRAP_LIMIT, 25);
+			g2d.drawRect(((int)getWidth()/2 - ball.GRAP_LIMIT/(BAR_SCALE*2)), 30, ball.GRAP_LIMIT/BAR_SCALE, 25);
 		}
 	}
 }
