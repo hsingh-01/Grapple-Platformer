@@ -24,7 +24,7 @@ public class Ball{
 
 		private boolean grapOnCd = false;
 
-		public static final int GRAP_LIMIT = 2400;
+		public static final int GRAP_LIMIT = 4800;
 		private int grapMeter = GRAP_LIMIT;
 
 		public Ball(double bx, double by){

@@ -20,7 +20,7 @@ public class CreateGroundListener implements ActionListener {
 				// System.out.println(floor.isCollideable());
 			}
 		}
-		Ground floor = new Ground(0, GrapplePlatformer.HEIGHT - 100, 8000, 50, "RECT", true, true);
+		Ground floor = new Ground(0, GrapplePlatformer.HEIGHT, 8000, 50, "RECT", true, true);
 		GrapplePlatformer.grounds.add(floor);
 		GrapplePlatformer.graphicsPanel.requestFocusInWindow();
 	}

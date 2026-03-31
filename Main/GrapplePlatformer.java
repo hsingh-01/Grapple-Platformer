@@ -1,6 +1,7 @@
 // jar cfe GrapplePlatformer.jar GrapplePlatformer *.class
 // javac -d build Main/*.java Listener/*.java Class/*.java 
-// java -cp build Main.GrapplePlatformer   
+// java -cp build Main.GrapplePlatformer  
+
 package Main;
 import Class.*;
 import Listener.*;
@@ -37,7 +38,7 @@ import java.text.DecimalFormat;
 public class GrapplePlatformer {
 	DecimalFormat speedFormat = new DecimalFormat("0.00");
 
-	public static final int WIDTH = 800;
+	public static final int WIDTH = 1600;
 	public static final int HEIGHT = 800;
 	public static final double G = 0.028;
 	public static boolean PAUSE = true;
@@ -133,7 +134,7 @@ public class GrapplePlatformer {
 		public static final double noGrappleCircleWidth = 1; 
 		public static final int GRAP_USE = -3;
 		public static final int GRAP_REC = +2;
-		public static final int BAR_SCALE = 3;
+		public static final int BAR_SCALE = 6;
 
 		public void updatePosition(){
 			if (MS_ELAPSED >= GRAP_CD * 1000){
@@ -185,7 +186,7 @@ public class GrapplePlatformer {
 			double minDist = Double.MAX_VALUE, dist = 0;
 			Ground closeGround = null;
 
-			if (ball.getGrap() && grappleTarget == null){
+			if (ball.getGrap() && grappleTarget == null){ // find closest ground
 				for (Ground gr : grounds){
 					double[] d = ball.getDxDy(gr);
 					double d2 = Math.sqrt(d[0] * d[0] + d[1] * d[1]);
@@ -195,7 +196,7 @@ public class GrapplePlatformer {
 						closeGround = gr;
 					}
 				}
-				grappleTarget = closeGround; // find closest ground
+				grappleTarget = closeGround; 
 			}
 
 			if (grappleTarget != null){ // find distance from closest ground
@@ -213,7 +214,6 @@ public class GrapplePlatformer {
 			}
 			 // only then calculate distances - prevents multi-object and object switching when grappling
 			ball.setGrapAvailable(!ball.isColl() && dist < GRAP_LEN && ball.getGrapMeter() > 0);
-			// System.out.println(ball.grapOnCd());
 			if (ball.getGrap() && ball.grapAvailable() && !ball.grapOnCd()){
 				double nx = dx / dist;
 				double ny = dy / dist;
@@ -245,19 +245,6 @@ public class GrapplePlatformer {
 			Graphics2D g2d = (Graphics2D) g; //needed for setsrtoke
 			g2d.setStroke(new BasicStroke(thickness));
 
-			if (ball.getGrap() == true && ball.grapAvailable() && !ball.grapOnCd()){
-				thickness = grappleThickness;
-				g2d.setStroke(new BasicStroke(thickness));
-				g2d.setColor(grappleColor);
-				g2d.drawLine((int) ball.getX(), (int) ball.getY(), (int)ball.getX() + (int) GraphicsPanel.getDX(), (int)ball.getY() + (int) GraphicsPanel.getDY());
-			}
-			if (ball.getGrap() && (ball.grapOnCd() || !ball.grapAvailable())){
-				g2d.setColor(grappleColor);
-				thickness = ballBorderThickness;
-				g2d.setStroke(new BasicStroke(thickness));
-				g2d.drawOval((int) (ball.getX() - GRAP_LEN), (int) (ball.getY() - GRAP_LEN), (int) (2 * GRAP_LEN), (int)(2 * GRAP_LEN));
-			}	
-
 			g2d.setColor(Color.BLACK);
 			g2d.drawOval((int)ball.getX() - Ball.BALL_RAD, (int)ball.getY() - Ball.BALL_RAD, Ball.BALL_RAD*2, Ball.BALL_RAD*2);
 
@@ -285,6 +272,19 @@ public class GrapplePlatformer {
 
 			g2d.setColor(ballColor);
 			g2d.fillOval((int)ball.getX() - Ball.BALL_RAD, (int)ball.getY() - Ball.BALL_RAD, Ball.BALL_RAD*2, Ball.BALL_RAD*2);
+			
+			if (ball.getGrap() == true && ball.grapAvailable() && !ball.grapOnCd()){
+				thickness = grappleThickness;
+				g2d.setStroke(new BasicStroke(thickness));
+				g2d.setColor(grappleColor);
+				g2d.drawLine((int) ball.getX(), (int) ball.getY(), (int)ball.getX() + (int) GraphicsPanel.getDX(), (int)ball.getY() + (int) GraphicsPanel.getDY());
+			}
+			if (ball.getGrap() && (ball.grapOnCd() || !ball.grapAvailable())){
+				g2d.setColor(grappleColor);
+				thickness = ballBorderThickness;
+				g2d.setStroke(new BasicStroke(thickness));
+				g2d.drawOval((int) (ball.getX() - GRAP_LEN), (int) (ball.getY() - GRAP_LEN), (int) (2 * GRAP_LEN), (int)(2 * GRAP_LEN));
+			}	
 		}
 	}
 
