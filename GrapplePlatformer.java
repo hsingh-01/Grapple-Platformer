@@ -111,6 +111,8 @@ public class GrapplePlatformer {
 		public void actionPerformed(ActionEvent e){
 			ball.setX(WIDTH/2);
 			ball.setY(HEIGHT/2);
+			ball.setDisplayX(0);
+			ball.setDisplayY(0);
 			ball.setVX(0);
 			ball.setVY(0);
 
