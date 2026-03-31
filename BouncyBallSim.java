@@ -40,9 +40,9 @@ public class BouncyBallSim {
 	public static final double GRAP_CD = 1.5;
 	public static final double GRAP_GIVEBACK = 0.25;
 	public static int MS_ELAPSED = 0;
-	public static final int SCROLL_MARK = 100;
 
-	Ball ball = new Ball(100, 100);
+	public static final int SCROLL_MARK = WIDTH;
+
 	private JFrame window;
 
 	private JButton resetButton;
@@ -55,6 +55,8 @@ public class BouncyBallSim {
 	private GraphicsPanel graphicsPanel;
 	private Timer timer;
 	private ArrayList<Ground> grounds = new ArrayList<>();
+	Ball ball = new Ball(WIDTH/2, HEIGHT/2);
+
 
 	Color grappleBarColor = new Color(35, 49, 140);
 	Color ballColor = new Color(255, 110, 134);
@@ -98,7 +100,7 @@ public class BouncyBallSim {
 		graphicsPanel.setBackground(backgroundColor);
 		window.add(graphicsPanel, BorderLayout.CENTER);
 		timer = new Timer(GAME_SPEED, new TimerListener());
- 
+
 		window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		window.setLocationRelativeTo(null);
 		window.setVisible(true);
@@ -107,8 +109,8 @@ public class BouncyBallSim {
 
 	private class ResetListener implements ActionListener{
 		public void actionPerformed(ActionEvent e){
-			ball.setX(100);
-			ball.setY(100);
+			ball.setX(WIDTH/2);
+			ball.setY(HEIGHT/2);
 			ball.setVX(0);
 			ball.setVY(0);
 
@@ -146,13 +148,13 @@ public class BouncyBallSim {
 	private class CreateGroundListener implements ActionListener {
 		public void actionPerformed(ActionEvent e){
 			grounds.clear();
-			for (int i = 0; i < 500; i++){
-				for (int j = 0; j < 1; j++){
-					Ground g = new Ground(25, 150 + 250 * i, 100 + 200 * j, "CIRC");
+			for (int i = 0; i < 5; i++){
+				for (int j = 0; j < 5; j++){
+					Ground g = new Ground(25, 150 + 500 * i, 100 + 500 * j, "CIRC");
 					grounds.add(g);
 
-					Ground floor = new Ground(0, graphicsPanel.getHeight() - 30, 5000, 15, "RECT");
-					grounds.add(floor);
+					// Ground floor = new Ground(0, graphicsPanel.getHeight() - 30, 5000, 15, "RECT");
+					// grounds.add(floor);
 				}
 			}
 			graphicsPanel.requestFocusInWindow();
@@ -205,6 +207,8 @@ public class BouncyBallSim {
 		private double ball_x;
 		private double ball_y;
 
+		private double display_x, display_y; 
+
 		private double[] ball_v = new double[2];
 		private double[] ball_a = new double[2];
 
@@ -255,6 +259,13 @@ public class BouncyBallSim {
 		public void setAX(double dax){ this.ball_a[0] = dax; }
 		public void setAY(double day){ this.ball_a[1] = day; }
 
+		public void setDisplayX(double dpx){this.display_x = dpx; }
+		public void setDisplayY(double dpy){this.display_y = dpy; }
+
+		public double getDisplayX(){ return this.display_x; }
+		public double getDisplayY(){ return this.display_y; }
+
+
 		public boolean grapAvailable() { return grapAvailable; }
 		public void setGrapAvailable(boolean t){ grapAvailable = t; }
 
@@ -304,8 +315,8 @@ public class BouncyBallSim {
 			double[] term2 = Vector.scale(n, 2 * Vector.dot(v, n));
 			v_prime = Vector.subtract(v, term2);
 			ball_v = v_prime;
-			ball_x -= n[0] * BALL_RAD;
-			ball_y -= n[1] * BALL_RAD;
+			// ball_x -= n[0] * BALL_RAD;
+			// ball_y -= n[1] * BALL_RAD;
 		}
 
 		public double[] getDxDy(Ground gr){
@@ -402,11 +413,14 @@ public class BouncyBallSim {
 
 			if (!ball.getGrap() && ball.getGrapMeter() < ball.GRAP_LIMIT && !ball.grapOnCd()){ ball.changeGrapMeter(GRAP_REC); }
 			
-			ballPosLabel.setText("(" + (int)(ball.getX()) + ", " + (int)(ball.getY()) + ") speed: " + speedFormat.format(ball.getSpeed()));
+			ballPosLabel.setText("(" + (int)(ball.getDisplayX()) + ", " + (int)(ball.getDisplayY()) + ") speed: " + speedFormat.format(ball.getSpeed()));
 			ball.setVY(ball.getVY() + ball.getAY() + G);
+			ball.setDisplayY(ball.getDisplayY() + ball.getVY());
 			ball.setY(ball.getY() + ball.getVY());
 
+
 			ball.setVX(ball.getVX() + ball.getAX());
+			ball.setDisplayX(ball.getDisplayX() + ball.getVX());
 			ball.setX(ball.getX() + ball.getVX());
 
 			if (ball.getVX() > 0){
@@ -423,7 +437,15 @@ public class BouncyBallSim {
 				for (Ground gr : grounds) {
 					gr.setX((gr.getX()-ballvx));
 				}
-			}			
+			}		
+			if (ball.getY() > graphicsPanel.getHeight() - SCROLL_MARK || ball.getY() < SCROLL_MARK){
+				double ballvy = ball.getVY();
+				ball.setY(ball.getY() - ballvy);
+
+				for (Ground gr : grounds) {
+					gr.setY((gr.getY()-ballvy));
+				}
+			}		
 
 			ball.checkCollisions();
 
