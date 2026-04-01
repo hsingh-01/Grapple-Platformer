@@ -40,9 +40,9 @@ public class GrapplePlatformer {
 
 	public static final int WIDTH = 1600;
 	public static final int HEIGHT = 800;
-	public static final double G = 0.028;
+	public static final double G = 0.023;
 	public static boolean PAUSE = true;
-	public static final double X_FRIC = 0.0;
+	public static final double X_FRIC = 0.004;
 	public static final double Y_BOUNCE_FRIC = -1;
 	public static final int GAME_SPEED = 4;
 	public static final double GRAP_CD = 1.5;
@@ -68,7 +68,7 @@ public class GrapplePlatformer {
 
 	Color grappleBarColor = new Color(35, 49, 140);
 	Color ballColor = new Color(255, 110, 134);
-	Color backgroundColor = new Color(187, 199, 183);
+	Color backgroundColor = new Color(52, 180, 235);
 	Color grappleColor = new Color(0, 0, 0);
 
 	public GrapplePlatformer(){
@@ -126,7 +126,7 @@ public class GrapplePlatformer {
 		private static double dx = 0;
 		private static double dy = 0;
 		public static Ground grappleTarget = null;
-		public static final double GRAP_LEN = 300.0;
+		public static final double GRAP_LEN = 600.0;
 
 		public static double getDX(){ return dx; }
 		public static double getDY(){ return dy; }
@@ -157,10 +157,10 @@ public class GrapplePlatformer {
 			ball.setX(ball.getX() + ball.getVX());
 
 			if (ball.getVX() > 0){
-				ball.setVX(Math.max(0, ball.getVX() - X_FRIC));
+				ball.setVX(Math.max(0, ball.getVX() * (1-X_FRIC)));
 			}
 			if (ball.getVX() < 0){
-				ball.setVX(Math.min(0, ball.getVX() + X_FRIC));
+				ball.setVX(Math.min(0, ball.getVX() * (1-X_FRIC)));
 			}
 
 			if (ball.getX() > graphicsPanel.getWidth() - SCROLL_MARK || ball.getX() < SCROLL_MARK){
@@ -215,8 +215,8 @@ public class GrapplePlatformer {
 			 // only then calculate distances - prevents multi-object and object switching when grappling
 			ball.setGrapAvailable(!ball.isColl() && dist < GRAP_LEN && ball.getGrapMeter() > 0);
 			if (ball.getGrap() && ball.grapAvailable() && !ball.grapOnCd()){
-				double nx = dx / dist;
-				double ny = dy / dist;
+				double nx = dx;
+				double ny = dy;
 				double v[] = {ball.getVX(),	ball.getVY()};
 				double n[] = {nx, ny};
 				double mag = Math.sqrt(nx * nx + ny * ny);

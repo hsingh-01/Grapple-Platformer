@@ -19,7 +19,7 @@ public class Ball{
 		public double speed = 0.0;
 		private boolean isColl = false;
 		private boolean grapAvailable = false;
-		public static int BALL_RAD = 15;
+		public static int BALL_RAD = 5;
 		public static final double X_A = 0.02;
 
 		private boolean grapOnCd = false;
