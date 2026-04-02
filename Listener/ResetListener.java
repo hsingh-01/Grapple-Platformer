@@ -1,6 +1,7 @@
 package Listener;
 import Main.GrapplePlatformer;
 import Class.Ball;
+import Class.Ground;
 import java.awt.event.*;
 
 public class ResetListener implements ActionListener{
@@ -16,8 +17,8 @@ public class ResetListener implements ActionListener{
 		GrapplePlatformer.ball.setGrapMeter(Ball.GRAP_LIMIT);
 
 		GrapplePlatformer.grounds.clear();
-		CreateGroundListener resetGroundTemp = new CreateGroundListener();
-		resetGroundTemp.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, null));
+		Ground startingPlatform = new Ground(25, GrapplePlatformer.ball.getX() - 25, GrapplePlatformer.ball.getY() + 25, "CIRC", false, true);
+		GrapplePlatformer.grounds.add(startingPlatform);
 		GrapplePlatformer.graphicsPanel.requestFocusInWindow();
 	}
 }
