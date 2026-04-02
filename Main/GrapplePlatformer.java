@@ -156,13 +156,15 @@ public class GrapplePlatformer {
 				Ground g_rect = new Ground(gx, gy, gw, gh, "RECT", false, true);
 				GrapplePlatformer.grounds.add(g_rect);
 
-				if (plats > 15){
+				if (plats > 5){
 					grounds.remove(0);
 					grounds.remove(1);
+					grounds.remove(2);
+					grounds.remove(3);
 				}
 			}
 			
-			// System.out.println(grounds.size());
+			//System.out.println(grounds.size());
 
 			if (MS_ELAPSED >= GRAP_CD * 1000){
 				if (ball.grapOnCd()){
