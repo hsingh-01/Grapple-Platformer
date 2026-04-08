@@ -140,7 +140,7 @@ public class GrapplePlatformer {
 				plats++;
 			//	System.out.println("passed: " + GrapplePlatformer.grounds.get(GrapplePlatformer.grounds.size() - 1).getX());
 				int gx = graphicsPanel.getWidth() + 250 + (int)(Math.random()*250);
-				int gy = graphicsPanel.getHeight()/2;
+				int gy = -1 * (int)ball.getDisplayY() + (int)(Math.random() * 1000);
 
 				int gw = 250;
 				int gh = 2500;
